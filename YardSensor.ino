@@ -30,6 +30,7 @@ WiFiServer server(123);
 WiFiClient client;
 
 unsigned long previousMillis = 0;
+uint32_t lastSensorData = 0;
 
 struct FrameConvert
 {
@@ -79,15 +80,17 @@ void loop()
                 Serial.print("Received: ");
                 Serial.println(c);
             }
-            if (millis() - previousMillis >= 5000)
+            uint32_t sensorData = readSensorData();
+            if (sensorData != lastSensorData)
             {
-                previousMillis = millis();
+                lastSensorData = sensorData;
+                Serial.println("Sensor data changed, sending update...");
                 FrameConvert frame;
                 frame.start = START_BYTE;
                 frame.key = STATUS;
                 frame.getset = GET_BYTE;
                 frame.id = ID;
-                frame.data = readSensorData();
+                frame.data = sensorData;
                 frame.stop = STOP_BYTE;
                 uint8_t buffer[10];
                 ConvertFrameToBytes(buffer, frame);
@@ -100,6 +103,10 @@ void loop()
                     Serial.print(" ");
                 }
                 Serial.println();
+            }
+            if (millis() - previousMillis >= 5000)
+            {
+                previousMillis = millis();
             }
         }
         client.stop();
